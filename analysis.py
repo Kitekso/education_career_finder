@@ -25,6 +25,19 @@ def get_year(record: dict, key: str) -> int | None:
 def get_wikidata_id(entity_url: str) -> str:
     return entity_url.rsplit("/", 1)[-1]
 
+def determine_education_status(
+    degree: str | None,
+    university: str | None,
+    major: str | None
+) -> str:
+
+    if degree is not None:
+        return "completed"
+
+    if university is not None or major is not None:
+        return "studied"
+
+    return "unknown"
 
 def build_people(records: list[dict]) -> dict[str, Person]:
     people: dict[str, Person] = {}
@@ -47,14 +60,21 @@ def build_people(records: list[dict]) -> dict[str, Person]:
                 birth_year=birth_year
             )
 
+        university = get_record_value(record, "universityLabel")
+        major = get_record_value(record, "majorLabel")
+        degree = get_record_value(record, "degreeLabel")
+        start_year = get_year(record, "startDate")
+        end_year = get_year(record, "endDate")
+        status=determine_education_status(degree, university, major)
+
         education = Education(
-            university=get_record_value(record, "universityLabel"),
-            major=get_record_value(record, "majorLabel"),
-            degree=get_record_value(record, "degreeLabel"),
-            start_year=get_year(record, "startDate"),
-            end_year=get_year(record, "endDate"),
-            status="studied"
-        )
+            university=university,
+            major=major,
+            degree=degree,
+            start_year=start_year,
+            end_year=end_year,
+            status=status
+            )
 
         people[wikidata_id].add_education(education)
 
