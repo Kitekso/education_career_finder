@@ -53,7 +53,7 @@ class Person:
         return majors
 
     def get_completed_majors(self) -> set[str]:
-        
+        completed_majors: set[str] = set()
 
         for education in self.educations:
             if (

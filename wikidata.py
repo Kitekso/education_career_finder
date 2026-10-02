@@ -6,7 +6,7 @@ WIKIDATA_URL = "https://query.wikidata.org/sparql"
 
 def fetch_education_records() -> list[dict]:
     query = """
-    SELECT
+    SELECT DISTINCT
         ?person
         ?personLabel
         ?birthDate
@@ -21,7 +21,7 @@ def fetch_education_records() -> list[dict]:
     WHERE {
 
         {
-            SELECT
+            SELECT DISTINCT
                 ?person
                 ?educationStatement
                 ?university
@@ -82,6 +82,39 @@ def fetch_education_records() -> list[dict]:
         raise RuntimeError(
             f"Błąd połączenia z Wikidata: {error}"
         ) from error
+
+    data = response.json()
+
+    return data["results"]["bindings"]
+
+def fetch_people_with_multiple_majors() -> list[dict]:
+    query = """
+    SELECT
+        ?person
+        (COUNT(DISTINCT ?major) AS ?majorCount)
+    WHERE {
+        ?person wdt:P31 wd:Q5.
+        ?person p:P69 ?educationStatement.
+        ?educationStatement pq:P812 ?major.
+    }
+    GROUP BY ?person
+    HAVING (COUNT(DISTINCT ?major) >= 2)
+    LIMIT 20
+    """
+
+    response = requests.get(
+        WIKIDATA_URL,
+        params={
+            "query": query,
+            "format": "json"
+        },
+        headers={
+            "User-Agent": "EducationCareerFinder/0.3"
+        },
+        timeout=30
+    )
+
+    response.raise_for_status()
 
     data = response.json()
 

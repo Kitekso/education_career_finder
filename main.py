@@ -1,6 +1,20 @@
 from analysis import build_people
 from models import Education, Person
-from wikidata import fetch_education_records
+from wikidata import (
+    fetch_education_records,
+    fetch_people_with_multiple_majors
+)
+
+candidates = fetch_people_with_multiple_majors()
+
+print("Kandydaci:")
+
+for candidate in candidates:
+    print(
+        candidate["person"]["value"],
+        "- liczba kierunków:",
+        candidate["majorCount"]["value"]
+    )
 
 def main():
 
