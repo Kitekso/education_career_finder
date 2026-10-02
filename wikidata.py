@@ -19,10 +19,22 @@ def fetch_education_records() -> list[dict]:
         ?startDate
         ?endDate
     WHERE {
-        ?person wdt:P31 wd:Q5.
-        ?person p:P69 ?educationStatement.
-        ?educationStatement ps:P69 ?university.
-        ?educationStatement pq:P812 ?major.
+
+        {
+            SELECT
+                ?person
+                ?educationStatement
+                ?university
+                ?major
+            WHERE {
+                ?person wdt:P31 wd:Q5.
+                ?person p:P69 ?educationStatement.
+
+                ?educationStatement ps:P69 ?university.
+                ?educationStatement pq:P812 ?major.
+            }
+            LIMIT 20
+        }
 
         OPTIONAL {
             ?educationStatement pq:P512 ?degree.
@@ -44,22 +56,32 @@ def fetch_education_records() -> list[dict]:
             bd:serviceParam wikibase:language "pl,en".
         }
     }
-    LIMIT 10
     """
 
-    response = requests.get(
-        WIKIDATA_URL,
-        params={
-            "query": query,
-            "format": "json"
-        },
-        headers={
-            "User-Agent": "EducationCareerFinder/0.2"
-        },
-        timeout=30
-    )
+    try:
+        response = requests.get(
+            WIKIDATA_URL,
+            params={
+                "query": query,
+                "format": "json"
+            },
+            headers={
+                "User-Agent": "EducationCareerFinder/0.2"
+            },
+            timeout=30
+        )
 
-    response.raise_for_status()
+        response.raise_for_status()
+
+    except requests.exceptions.Timeout as error:
+        raise RuntimeError(
+            "Wikidata nie odpowiedziała w ciągu 30 sekund."
+        ) from error
+
+    except requests.exceptions.RequestException as error:
+        raise RuntimeError(
+            f"Błąd połączenia z Wikidata: {error}"
+        ) from error
 
     data = response.json()
 

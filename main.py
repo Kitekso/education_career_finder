@@ -1,24 +1,39 @@
+from analysis import build_people
 from models import Education, Person
 from wikidata import fetch_education_records
 
-
 def main():
-    records = fetch_education_records()
+
+    try:
+        records = fetch_education_records()
+
+    except RuntimeError as error:
+        print("Błąd pobierania danych:")
+        print(error)
+        return
+    
+    people = build_people(records)
 
     print("Liczba rekordów:", len(records))
+    print("Liczba osób:", len(people))
 
-    for record in records:
-        person_name = record["personLabel"]["value"]
-        major_name = record["majorLabel"]["value"]
-        university_name = record["universityLabel"]["value"]
+    for person in people.values():
+        print()
+        print(person.name, "-", person.wikidata_id)
 
-        print(
-            person_name,
-            "|",
-            major_name,
-            "|",
-            university_name
-        )
+        print("Kierunki:", person.get_unique_majors())
+
+        for education in person.educations:
+            print(
+                "  ",
+                education.major,
+                "|",
+                education.university,
+                "|",
+                education.start_year,
+                "-",
+                education.end_year
+            )
 
 
 if __name__ == "__main__":

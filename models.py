@@ -1,8 +1,8 @@
 class Education:
     def __init__(
         self,
-        university: str,
-        major: str,
+        university: str | None = None,
+        major: str | None = None,
         degree: str | None = None,
         start_year: int | None = None,
         end_year: int | None = None,
@@ -44,25 +44,25 @@ class Person:
         self.educations.append(education)
 
     def get_unique_majors(self) -> set[str]:
-    majors: set[str] = set()
+        majors: set[str] = set()
 
-    for education in self.educations:
-        if education.major is not None:
-            majors.add(education.major)
+        for education in self.educations:
+            if education.major is not None:
+                majors.add(education.major)
 
-    return majors
+        return majors
 
     def get_completed_majors(self) -> set[str]:
-    completed_majors: set[str] = set()
+        
 
-    for education in self.educations:
-        if (
-            education.status == "completed"
-            and education.major is not None
-        ):
-            completed_majors.add(education.major)
+        for education in self.educations:
+            if (
+                education.status == "completed"
+                and education.major is not None
+            ):
+                completed_majors.add(education.major)
 
-    return completed_majors
+        return completed_majors
 
 
     def get_number_of_majors(self) -> int:
