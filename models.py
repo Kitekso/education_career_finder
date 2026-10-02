@@ -7,7 +7,7 @@ class Education:
         start_year: int | None = None,
         end_year: int | None = None,
         age_at_start: int | None = None,
-        status: str = "unknown"
+        status: str = "unknown",
     ):
         self.university = university
         self.major = major
@@ -24,7 +24,7 @@ class Person:
         name: str,
         wikidata_id: str,
         birth_year: int | None = None,
-        wikipedia_url: str | None = None
+        wikipedia_url: str | None = None,
     ):
         self.name = name
         self.wikidata_id = wikidata_id
@@ -32,19 +32,34 @@ class Person:
         self.wikipedia_url = wikipedia_url
         self.educations: list[Education] = []
 
-    def add_education(self, education: Education):
-        if (
-            self.birth_year is not None
-            and education.start_year is not None
-        ):
-            education.age_at_start = (
-                education.start_year - self.birth_year
+    def add_education(self, education: Education) -> None:
+        if self.birth_year is not None and education.start_year is not None:
+            education.age_at_start = education.start_year - self.birth_year
+
+        new_education = (
+            education.university,
+            education.major,
+            education.degree,
+            education.start_year,
+            education.end_year
+        )
+
+        for existing in self.educations:
+            existing_education = (
+                existing.university,
+                existing.major,
+                existing.degree,
+                existing.start_year,
+                existing.end_year
             )
+
+            if new_education == existing_education:
+                return
 
         self.educations.append(education)
 
     def get_unique_majors(self) -> set[str]:
-        majors: set[str] = set()
+        majors = set()
 
         for education in self.educations:
             if education.major is not None:
@@ -53,17 +68,13 @@ class Person:
         return majors
 
     def get_completed_majors(self) -> set[str]:
-        completed_majors: set[str] = set()
+        completed_majors = set()
 
         for education in self.educations:
-            if (
-                education.status == "completed"
-                and education.major is not None
-            ):
+            if education.status == "completed" and education.major is not None:
                 completed_majors.add(education.major)
 
         return completed_majors
-
 
     def get_number_of_majors(self) -> int:
         return len(self.get_unique_majors())

@@ -3,9 +3,52 @@ import requests
 
 WIKIDATA_URL = "https://query.wikidata.org/sparql"
 
+USER_AGENT = (
+    "EducationCareerFinder/0.3 "
+    "(https://github.com/Kitekso/education_career_finder)"
+)
 
-def fetch_education_records() -> list[dict]:
-    query = """
+
+def run_query(query: str) -> list[dict]:
+    try:
+        response = requests.get(
+            WIKIDATA_URL,
+            params={
+                "query": query,
+                "format": "json"
+            },
+            headers={
+                "User-Agent": USER_AGENT
+            },
+            timeout=45
+        )
+
+        response.raise_for_status()
+        data = response.json()
+
+    except requests.exceptions.Timeout as error:
+        raise RuntimeError(
+            "Wikidata nie odpowiedziała wystarczająco szybko."
+        ) from error
+
+    except requests.exceptions.RequestException as error:
+        raise RuntimeError(
+            f"Błąd połączenia z Wikidata: {error}"
+        ) from error
+
+    except ValueError as error:
+        raise RuntimeError(
+            "Nie udało się odczytać odpowiedzi Wikidata jako JSON."
+        ) from error
+
+    return data.get("results", {}).get("bindings", [])
+
+
+def fetch_education_records(limit: int = 200) -> list[dict]:
+    if limit <= 0:
+        raise ValueError("Limit musi być większy od 0.")
+
+    query = f"""
     SELECT DISTINCT
         ?person
         ?personLabel
@@ -18,104 +61,42 @@ def fetch_education_records() -> list[dict]:
         ?degreeLabel
         ?startDate
         ?endDate
-    WHERE {
-
-        {
+    WHERE {{
+        {{
             SELECT DISTINCT
                 ?person
                 ?educationStatement
                 ?university
                 ?major
-            WHERE {
+            WHERE {{
                 ?person wdt:P31 wd:Q5.
                 ?person p:P69 ?educationStatement.
-
                 ?educationStatement ps:P69 ?university.
                 ?educationStatement pq:P812 ?major.
-            }
-            LIMIT 20
-        }
+            }}
+            LIMIT {limit}
+        }}
 
-        OPTIONAL {
+        OPTIONAL {{
             ?educationStatement pq:P512 ?degree.
-        }
+        }}
 
-        OPTIONAL {
+        OPTIONAL {{
             ?educationStatement pq:P580 ?startDate.
-        }
+        }}
 
-        OPTIONAL {
+        OPTIONAL {{
             ?educationStatement pq:P582 ?endDate.
-        }
+        }}
 
-        OPTIONAL {
+        OPTIONAL {{
             ?person wdt:P569 ?birthDate.
-        }
+        }}
 
-        SERVICE wikibase:label {
+        SERVICE wikibase:label {{
             bd:serviceParam wikibase:language "pl,en".
-        }
-    }
+        }}
+    }}
     """
 
-    try:
-        response = requests.get(
-            WIKIDATA_URL,
-            params={
-                "query": query,
-                "format": "json"
-            },
-            headers={
-                "User-Agent": "EducationCareerFinder/0.2"
-            },
-            timeout=30
-        )
-
-        response.raise_for_status()
-
-    except requests.exceptions.Timeout as error:
-        raise RuntimeError(
-            "Wikidata nie odpowiedziała w ciągu 30 sekund."
-        ) from error
-
-    except requests.exceptions.RequestException as error:
-        raise RuntimeError(
-            f"Błąd połączenia z Wikidata: {error}"
-        ) from error
-
-    data = response.json()
-
-    return data["results"]["bindings"]
-
-def fetch_people_with_multiple_majors() -> list[dict]:
-    query = """
-    SELECT
-        ?person
-        (COUNT(DISTINCT ?major) AS ?majorCount)
-    WHERE {
-        ?person wdt:P31 wd:Q5.
-        ?person p:P69 ?educationStatement.
-        ?educationStatement pq:P812 ?major.
-    }
-    GROUP BY ?person
-    HAVING (COUNT(DISTINCT ?major) >= 2)
-    LIMIT 20
-    """
-
-    response = requests.get(
-        WIKIDATA_URL,
-        params={
-            "query": query,
-            "format": "json"
-        },
-        headers={
-            "User-Agent": "EducationCareerFinder/0.3"
-        },
-        timeout=30
-    )
-
-    response.raise_for_status()
-
-    data = response.json()
-
-    return data["results"]["bindings"]
+    return run_query(query)
