@@ -9,7 +9,7 @@ from wikidata import (
     fetch_education_for_people,
     fetch_career_data_for_people
 )
-
+from export import save_results_to_json, save_results_to_csv
 
 MIN_MAJORS = 2
 
@@ -127,6 +127,20 @@ def main() -> None:
     print()
     print("Wyniki")
     print("------")
+
+    try:
+        save_results_to_json(results)
+        save_results_to_csv(results)
+
+        print()
+        print("Wyniki zapisano również do:")
+        print(" - data/results.json")
+        print(" - data/results.csv")
+
+    except OSError as error:
+        print()
+        print("Nie udało się zapisać wyników do pliku:")
+        print(error)
 
     for person in results:
         print()
