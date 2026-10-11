@@ -1,5 +1,14 @@
-from analysis import build_people, filter_people_with_min_majors
-from wikidata import fetch_person_ids, fetch_education_for_people
+from analysis import (
+    build_people,
+    add_career_data,
+    filter_people_with_min_majors
+)
+
+from wikidata import (
+    fetch_person_ids,
+    fetch_education_for_people,
+    fetch_career_data_for_people
+)
 
 
 MIN_MAJORS = 2
@@ -38,8 +47,8 @@ def main() -> None:
 
             checked_people += len(person_ids)
 
-            records = fetch_education_for_people(person_ids)
-            people = build_people(records)
+            education_records = fetch_education_for_people(person_ids)
+            people = build_people(education_records)
 
             candidates = filter_people_with_min_majors(
                 people,
@@ -59,7 +68,7 @@ def main() -> None:
 
     except (RuntimeError, ValueError) as error:
         print()
-        print("Błąd:")
+        print("Błąd podczas wyszukiwania:")
         print(error)
         return
 
@@ -70,17 +79,35 @@ def main() -> None:
         reverse=True
     )
 
+    results = results[:TARGET_RESULTS]
+
     if not results:
         print()
         print("Nie znaleziono osób spełniających kryteria.")
         return
 
+    result_ids = []
+
+    for person in results:
+        result_ids.append(person.wikidata_id)
+
+    try:
+        career_records = fetch_career_data_for_people(result_ids)
+        add_career_data(found_people, career_records)
+
+    except RuntimeError as error:
+        print()
+        print("Nie udało się pobrać części danych o karierze:")
+        print(error)
+
     print()
     print("Wyniki")
     print("------")
 
-    for person in results[:TARGET_RESULTS]:
+    for person in results:
         print()
+        print("=" * 70)
+
         print(
             person.name,
             f"({person.wikidata_id})",
@@ -90,9 +117,23 @@ def main() -> None:
         )
 
         print(
+            "Rok urodzenia:",
+            format_value(person.birth_year)
+        )
+
+        print(
+            "Wikidata:",
+            f"https://www.wikidata.org/wiki/{person.wikidata_id}"
+        )
+
+        print()
+        print(
             "Kierunki:",
             ", ".join(sorted(person.get_unique_majors()))
         )
+
+        print()
+        print("Edukacja:")
 
         for education in person.educations:
             print(
@@ -112,14 +153,27 @@ def main() -> None:
                 education.status
             )
 
-        for career in person.careers:
+        print()
+
+        if person.occupations:
             print(
-                " -",
-                "| zawód:",
-                format_value(career.occupation),
-                "| pracodawca:",
-                format_value(career.employer)
+                "Zawody:",
+                ", ".join(sorted(person.occupations))
             )
+        else:
+            print("Zawody: brak danych")
+
+        if person.employers:
+            print(
+                "Pracodawcy:",
+                ", ".join(sorted(person.employers))
+            )
+        else:
+            print("Pracodawcy: brak danych")
+
+    print()
+    print("=" * 70)
+    print("Koniec wyników.")
 
 
 if __name__ == "__main__":

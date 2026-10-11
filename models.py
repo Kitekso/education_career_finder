@@ -17,14 +17,6 @@ class Education:
         self.age_at_start = age_at_start
         self.status = status
 
-class Career:
-    def __init__(
-        self,
-        occupation: str | None = None,
-        employer: str | None = None,
-    ):
-        self.occupation = occupation
-        self.employer = employer
 
 class Person:
     def __init__(
@@ -38,8 +30,10 @@ class Person:
         self.wikidata_id = wikidata_id
         self.birth_year = birth_year
         self.wikipedia_url = wikipedia_url
+
         self.educations: list[Education] = []
-        self.careers: list[Career] = []
+        self.occupations: set[str] = set()
+        self.employers: set[str] = set()
 
     def add_education(self, education: Education) -> None:
         if self.birth_year is not None and education.start_year is not None:
@@ -67,6 +61,14 @@ class Person:
 
         self.educations.append(education)
 
+    def add_occupation(self, occupation: str | None) -> None:
+        if occupation is not None:
+            self.occupations.add(occupation)
+
+    def add_employer(self, employer: str | None) -> None:
+        if employer is not None:
+            self.employers.add(employer)
+
     def get_unique_majors(self) -> set[str]:
         majors = set()
 
@@ -90,20 +92,3 @@ class Person:
 
     def get_number_of_completed_majors(self) -> int:
         return len(self.get_completed_majors())
-
-    def add_career(self, career: Career) -> None:
-        new_career = (
-            career.occupation,
-            career.employer
-    )
-
-        for existing in self.careers:
-            existing_career = (
-                existing.occupation,
-                existing.employer
-            )
-
-            if new_career == existing_career:
-                return
-
-        self.careers.append(career)

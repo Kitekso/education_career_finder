@@ -17,13 +17,15 @@ def get_year(record: dict, key: str) -> int | None:
         return None
 
     try:
-        return int(value[:4])
-    except ValueError:
+        year = value.split("-", 1)[0].lstrip("+")
+        return int(year)
+    except (ValueError, AttributeError):
         return None
 
 
 def get_wikidata_id(entity_url: str) -> str:
     return entity_url.rsplit("/", 1)[-1]
+
 
 def determine_education_status(
     degree: str | None,
@@ -38,6 +40,7 @@ def determine_education_status(
         return "studied"
 
     return "unknown"
+
 
 def build_people(records: list[dict]) -> dict[str, Person]:
     people: dict[str, Person] = {}
@@ -65,7 +68,12 @@ def build_people(records: list[dict]) -> dict[str, Person]:
         degree = get_record_value(record, "degreeLabel")
         start_year = get_year(record, "startDate")
         end_year = get_year(record, "endDate")
-        status=determine_education_status(degree, university, major)
+
+        status = determine_education_status(
+            degree,
+            university,
+            major
+        )
 
         education = Education(
             university=university,
@@ -74,11 +82,35 @@ def build_people(records: list[dict]) -> dict[str, Person]:
             start_year=start_year,
             end_year=end_year,
             status=status
-            )
+        )
 
         people[wikidata_id].add_education(education)
 
     return people
+
+
+def add_career_data(
+    people: dict[str, Person],
+    records: list[dict]
+) -> None:
+
+    for record in records:
+        person_url = get_record_value(record, "person")
+
+        if person_url is None:
+            continue
+
+        wikidata_id = get_wikidata_id(person_url)
+        person = people.get(wikidata_id)
+
+        if person is None:
+            continue
+
+        occupation = get_record_value(record, "occupationLabel")
+        employer = get_record_value(record, "employerLabel")
+
+        person.add_occupation(occupation)
+        person.add_employer(employer)
 
 
 def filter_people_with_min_majors(
