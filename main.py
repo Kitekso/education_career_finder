@@ -25,10 +25,34 @@ def format_value(value: str | int | None) -> str:
 
     return str(value)
 
+def get_number_from_user(message: str, default: int) -> int:
+    value = input(f"{message} [{default}]: ").strip()
+
+    if value == "":
+        return default
+    try:
+        number = int(value)
+
+        if number > 0:
+            return number
+    except ValueError:
+        pass
+    print("Nieprawidłowa wartość. Użyto wartości domyślnej:", default)
+    return default
 
 def main() -> None:
     print("Education Career Finder")
     print("-----------------------")
+
+    min_majors = get_number_from_user(
+        "Minimalna liczba kierunków",
+        MIN_MAJORS
+)
+
+    target_results = get_number_from_user(
+        "Liczba wyników",
+        TARGET_RESULTS
+)
 
     found_people = {}
     checked_people = 0
@@ -52,7 +76,7 @@ def main() -> None:
 
             candidates = filter_people_with_min_majors(
                 people,
-                MIN_MAJORS
+                min_majors
             )
 
             for person in candidates:
@@ -63,7 +87,7 @@ def main() -> None:
                 f"znaleziono: {len(found_people)}"
             )
 
-            if len(found_people) >= TARGET_RESULTS:
+            if len(found_people) >= target_results:
                 break
 
     except (RuntimeError, ValueError) as error:
@@ -79,7 +103,7 @@ def main() -> None:
         reverse=True
     )
 
-    results = results[:TARGET_RESULTS]
+    results = results[:target_results]
 
     if not results:
         print()
