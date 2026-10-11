@@ -112,6 +112,15 @@ def main() -> None:
                 education.status
             )
 
+        for career in person.careers:
+            print(
+                " -",
+                "| zawód:",
+                format_value(career.occupation),
+                "| pracodawca:",
+                format_value(career.employer)
+            )
+
 
 if __name__ == "__main__":
     main()
